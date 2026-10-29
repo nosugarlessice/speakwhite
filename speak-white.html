@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+
+<title>Speak White</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
+<!-- Self-hosting with Adobe Fonts? Add your Typekit <link> for "adobe-caslon-pro" here; it is first in the font stack. -->
+<style>
+/* Layout: the poem rises in the poster's three voices — left (immigrant) · middle (mainstream) ·
+   right (performed kindness) — and, as each stanza passes the trigger line, it converges into one
+   centred column. Single deliberate look: pure black/white, inverted by hovering a "speak white". */
+:root{
+  --ink:#000;
+  --paper:#fff;
+  --hilite:#b4d5fe;           /* text-selection blue, used only in the opening */
+  --bg:var(--ink);
+  --fg:var(--paper);
+  --serif:"adobe-caslon-pro","Adobe Caslon Pro","Libre Caslon Text","Big Caslon",Georgia,"Times New Roman",serif;
+  /* type sizes: each is the earlier size plus 1pt */
+  --t-small:calc(12px + 1pt);
+  --t-body:clamp(calc(14px + 1pt), calc(0.45vw + 11px + 1pt), calc(17px + 1pt));
+  --t-title:var(--t-body);    /* pinned title matches the poem text */
+  --t-intro:clamp(calc(30px + 1pt), calc(4.2vw + 1pt), calc(60px + 1pt));
+  --ease:cubic-bezier(.22,.8,.18,1);
+  --landing:75svh;            /* where the poem's opening sits when the page lands */
+  color-scheme:dark;
+}
+:root[data-inv]{ --bg:var(--paper); --fg:var(--ink); color-scheme:light; }
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--serif);
+  font-size:var(--t-body);
+  -webkit-font-smoothing:antialiased;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  transition:background-color .7s ease, color .7s ease;
+  overflow-x:clip;   /* clip, not hidden: hidden would stop the end-of-poem pinning from working */
+}
+::selection{ background:var(--fg); color:var(--bg); }
+
+/* ---------- pinned title + progress ---------- */
+.top{
+  position:fixed; inset:0 0 auto; z-index:20;
+  padding-top:env(safe-area-inset-top, 0px);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  background:transparent;
+  pointer-events:none;
+  isolation:isolate;
+}
+/* fade behind the bar, title and language pills: page colour at the top, clear below,
+   so poem lines rising past the title dissolve instead of colliding with it */
+.top::before{
+  content:""; position:absolute; inset:0 0 auto; z-index:-1;
+  height:calc(env(safe-area-inset-top, 0px) + 112px);
+  background:var(--bg);
+  -webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 50%, transparent 100%);
+          mask-image:linear-gradient(to bottom, #000 0%, #000 50%, transparent 100%);
+  transition:background-color .7s ease;
+}
+.progress{
+  position:absolute; left:0; right:0; top:env(safe-area-inset-top, 0px);
+  height:6px; background:var(--fg);
+  transform-origin:left center; transform:scaleX(0);
+  transition:background-color .7s ease;
+}
+.title{
+  width:fit-content; margin:0 auto; padding-block:26px 0; line-height:30px;
+  pointer-events:auto;
+  transition:color .7s ease;
+  text-align:center; font-weight:400; font-style:italic;
+  font-size:var(--t-title); letter-spacing:.005em;
+}
+
+/* the title doubles as a "back to the start" button */
+.home{
+  font:inherit; color:inherit; letter-spacing:inherit;
+  background:none; border:0; padding:0; margin:0; cursor:pointer;
+}
+.home:focus-visible{ outline:2px solid currentColor; outline-offset:6px; }
+
+/* every "speak white" in the poem carries a faint underline that firms up on hover,
+   hinting that it does something */
+.sw-word{
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-underline-offset:.22em;
+  text-decoration-color:color-mix(in srgb, currentColor 35%, transparent);
+  transition:text-decoration-color .25s ease, text-underline-offset .25s ease;
+  cursor:pointer;
+}
+.sw-word:hover{ text-decoration-color:currentColor; text-underline-offset:.32em; }
+/* ---------- poem ---------- */
+/* The poem's opening ("Speak white" and the first lines of the first stanza) peeks in across
+   the bottom quarter of the screen when the page lands, below the trigger line and in its columns.
+   When the end of the poem reaches the bottom of the screen the sheet holds still. The extra
+   scroll in .runway-end first lets the last stanzas finish converging, then slides the two
+   end panels in over the poem, then leaves a little room to rest on them. */
+.runway{ padding-top:var(--landing); }
+.sheet{ position:sticky; top:0; }
+.runway-end{ height:250vh; }
+main{ padding-block:0 10vh; }
+.poem{
+  position:relative;
+  max-width:1200px; margin-inline:auto;
+  padding-inline:104px;
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  column-gap:24px;
+  row-gap:2.2em;
+  line-height:1.4;
+  opacity:0;
+  transition:opacity 1.4s ease;
+}
+.poem.shown{ opacity:1; }
+.block{
+  display:grid; min-width:0; text-align:center;
+  transform:translateX(var(--shift, 0px));
+  transition:transform .3s ease-out;
+  will-change:transform;
+}
+.block[data-col="L"]{ grid-column:1; }
+.block[data-col="M"]{ grid-column:2; }
+.block[data-col="R"]{ grid-column:3; }
+
+.layer{
+  grid-area:1 / 1; min-width:0;
+  opacity:0; visibility:hidden;
+  transition:opacity .5s ease, visibility 0s linear .5s;
+}
+:root[data-lang="fr"] .layer[data-l="fr"],
+:root[data-lang="en"] .layer[data-l="en"]{ opacity:1; visibility:visible; transition-delay:0s; }
+.line{ display:block; text-wrap:balance; }
+.line em{ font-style:italic; }
+.ph{
+  display:inline-block; max-width:100%;
+  height:.45em; vertical-align:.18em;
+  background:currentColor; opacity:.22;
+}
+
+/* ---------- language switch: "fra / eng" as plain text in the top-right corner, level with the
+   title. The current language is set in italic, the other in roman — no fills, no outlines. ---------- */
+.langs{
+  position:fixed; z-index:21;
+  top:calc(env(safe-area-inset-top, 0px) + 26px);
+  right:max(16px, calc(env(safe-area-inset-right, 0px) + 16px));
+  display:flex; align-items:baseline;
+  font-size:var(--t-body); line-height:30px; color:var(--fg);
+  transition:color .7s ease;
+}
+.lang{
+  font:inherit; font-style:normal; letter-spacing:.02em; line-height:inherit;
+  color:inherit; background:none; border:0; padding:0 .1em; cursor:pointer;
+}
+.lang[aria-pressed="true"]{ font-style:italic; }
+.langs .slash{ padding-inline:.35em; }
+.lang:focus-visible{ outline:1px solid currentColor; outline-offset:3px; }
+
+/* ---------- end panels: two outlined panels that slide in from the sides over the poem ----------
+   They sit under the top banner (z-index 20) and above everything else in the page. */
+.panel{
+  position:fixed; top:0; bottom:0; z-index:18;
+  background:var(--bg); color:var(--fg);
+  border:1pt solid var(--fg);
+  box-sizing:border-box;
+  display:flex; align-items:center; justify-content:center;
+  padding:calc(env(safe-area-inset-top, 0px) + 112px) 32px calc(env(safe-area-inset-bottom, 0px) + 48px);
+  transition:background-color .7s ease, color .7s ease, border-color .7s ease;
+  will-change:transform;
+}
+.panel-left{ left:0; width:calc(100% / 3); transform:translateX(-101%); }     /* colophon: one third */
+.panel-right{ right:0; width:calc(200% / 3); transform:translateX(101%); }    /* about: two thirds */
+
+/* right panel: the poet's reading, then a short history of the poem */
+.panel-right{ padding:0; overflow:hidden; }
+/* the right panel scrolls inside its own area, which starts below the top banner;
+   lines fade out at its top edge as they scroll away */
+.panel-scroll{
+  position:absolute; left:0; right:0; bottom:0;
+  top:calc(env(safe-area-inset-top, 0px) + 112px);
+  overflow-y:hidden;   /* at its top, scrolling further up carries on into the page and the panels slide back out */
+  display:flex; justify-content:flex-start; align-items:flex-start;   /* content column hugs the left edge */
+  padding:28px 32px calc(env(safe-area-inset-bottom, 0px) + 48px);   /* top padding = fade height */
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 28px);
+          mask-image:linear-gradient(to bottom, transparent 0, #000 28px);
+}
+/* one fixed column: half the screen wide, set against the left side of the panel */
+.about{ width:min(100%, 50vw); margin-block:auto;
+   display:flex; flex-direction:column; gap:112px; }   /* space between video, About the Poem, Visualizing the Voices */
+.video-slot{ margin:0; }
+.video-slot iframe{
+  display:block; width:100%; height:auto; aspect-ratio:16 / 9; max-width:100%;
+  background:var(--bg); border:1pt solid var(--fg); box-sizing:border-box;
+}
+.video-slot figcaption{ margin-top:10px; font-size:var(--t-small); font-style:italic; }
+.video-slot .yt-link{ font-style:normal; color:inherit; margin-left:.6em; white-space:nowrap; }
+.video-fallback{
+  display:grid; place-items:center; width:100%; aspect-ratio:16 / 9; box-sizing:border-box;
+  border:1pt solid var(--fg); color:var(--fg); text-decoration:none; font-size:var(--t-body);
+}
+.history{ font-size:var(--t-body); line-height:1.6; }
+.history h2{ margin:0 0 12px; font-size:var(--t-body); font-weight:400; font-style:italic; }
+.history p{ margin:0 0 .9em; }
+.history p:last-child, .history ul:last-child{ margin-bottom:0; }
+.columns-list{ margin:0 0 .9em; padding:0; list-style:none; font-size:calc(var(--t-body) - 3pt); }   /* same size as the small credits */
+.columns-list li{ position:relative; padding-left:2.8em; margin-bottom:.6em; }
+.columns-list li::before{ content:"–"; position:absolute; left:1.4em; }   /* en dash markers, indented */
+.history .ph{ display:block; margin:.55em 0 .75em; }       /* placeholder lines until the text is in */
+
+/* left panel: the colophon, fixed in place while the right panel scrolls —
+   "Written by" starts level with the top edge of the video (as first laid out),
+   "Designed by" and "Typeface" sit at the bottom of the panel.
+   The script measures the video once per layout and sets --col-top. */
+.panel-left{ align-items:stretch; }
+.colophon{ margin:0; font-size:var(--t-body); line-height:1.6; text-align:left; }
+.colophon p{ margin:0; }
+.colophon .written{ position:absolute; left:32px; right:32px; top:var(--col-top, 40%); }
+.colophon .credits-end{ position:absolute; left:32px; right:32px; bottom:calc(env(safe-area-inset-bottom, 0px) + 48px);
+  font-size:calc(var(--t-body) - 3pt); }   /* "Designed by" and "Typeface": 3pt smaller */
+.colophon em{ font-style:italic; margin-right:.35em; }   /* only the labels are italic */
+.colophon .sep{ padding-inline:.4em; }                     /* bar before the year */
+
+/* ---------- cursor ---------- */
+.cursor{
+  position:fixed; left:0; top:0; z-index:200;
+  width:34px; height:34px; margin:-17px 0 0 -17px;
+  border-radius:50%; background:#fff; mix-blend-mode:difference;
+  pointer-events:none; opacity:0;
+  transition:width .25s var(--ease), height .25s var(--ease), margin .25s var(--ease), opacity .3s ease;
+}
+.cursor.big{ width:64px; height:64px; margin:-32px 0 0 -32px; }
+/* the inversion wave: grows from the cursor to cover the screen, then the page swaps colors underneath */
+.wave{
+  position:fixed; inset:0; z-index:199;
+  background:#fff; mix-blend-mode:difference;
+  pointer-events:none;
+  clip-path:circle(0px at 50% 50%);
+}
+:root.swap body, :root.swap .progress, :root.swap .title, :root.swap .lang,
+:root.swap .top::before, :root.swap .panel, :root.swap .langs{ transition:none !important; }
+@media (hover:hover) and (pointer:fine){
+  html, body, button{ cursor:none; }
+  .cursor.on{ opacity:1; }
+}
+
+/* ---------- opening ---------- */
+.intro{
+  position:fixed; inset:0; z-index:100;
+  display:grid; place-items:center;
+  background:#fff;
+  transition:background-color 1s ease, opacity .9s ease;
+}
+.intro-word{
+  font-family:var(--serif); font-style:italic; font-weight:400;
+  font-size:var(--t-intro); color:#fff; white-space:pre;
+  transition:opacity 1s ease;
+}
+.intro-word .c.sel{ background:var(--hilite); color:#fff; }
+.intro.dark{ background:#000; }
+.intro.dark .intro-word{ opacity:0; }
+.intro.gone{ opacity:0; pointer-events:none; }
+.intro[hidden]{ display:none; }
+
+@media (prefers-reduced-motion:reduce){
+  .block, .poem, .layer, body, .top, .progress{ transition-duration:.01s !important; }
+}
+
+/* ===================================================================================
+   PHONE  (screens 760px wide or narrower — phones held upright)
+   Everything below applies to phones only and overrides the desktop/laptop styles above.
+   Change phone layout here; the desktop and laptop site is left exactly as it is.
+   The phone's scroll settings (trigger line, panel timing) are in the script, in PHONE = { … }.
+   =================================================================================== */
+@media (max-width:760px){
+  :root{
+    /* phone type sizes and landing position (same as desktop for now) */
+    --t-small:calc(12px + 1pt);
+    --t-body:calc(14px + 1pt);
+    --t-intro:calc(30px + 1pt);
+    --landing:75svh;
+  }
+
+  /* poem: one column; stanzas start shifted left / centre / right inside it */
+  .poem{ grid-template-columns:minmax(0, 1fr); padding-inline:0; row-gap:1.9em; }
+  .block, .block[data-col]{ grid-column:1; width:82%; }
+  .block[data-col="L"]{ justify-self:start; }
+  .block[data-col="M"]{ justify-self:center; }
+  .block[data-col="R"]{ justify-self:end; }
+  /* lines start aligned to their column's side and ease to centred as the stanza converges
+     (the script slides each line; these set the starting alignment) */
+  .block[data-col="L"] .line{ text-align:left; }
+  .block[data-col="R"] .line{ text-align:right; }
+  .line .w{ display:inline-block; will-change:transform; }   /* each word slides with its row */
+
+  /* end panels */
+  .panel{ padding-inline:16px; }
+  /* phones: the panels still slide in from the sides, but stack — colophon a third of the
+     height at the top, the reading and history in the lower two thirds */
+  .panel-left, .panel-right{ width:100%; }
+  .panel-left{ bottom:auto; height:calc(100% / 3); }
+  .panel-right{ top:auto; height:calc(200% / 3); }
+  .panel-scroll{ top:0; padding:28px 36px calc(env(safe-area-inset-bottom, 0px) + 32px); }   /* wider side margins */
+  .about{ width:100%; gap:64px; }
+  .colophon{ line-height:1.5; }
+  .panel-left{ padding-top:calc(env(safe-area-inset-top, 0px) + 92px); padding-bottom:16px; }
+  /* top panel: two columns — "Written by" on the left, "Designed by" and "Typeface" on the right */
+  .panel-left{ padding-inline:36px; }                 /* same side margins as the bottom panel */
+  .colophon{ width:100%; height:100%; display:grid; grid-template-columns:1fr 1fr; column-gap:16px; align-content:center; }
+  .colophon .written, .colophon .credits-end{ position:static; }
+  .colophon .written{ grid-column:1; text-align:left; }
+  .colophon .credits-end{ grid-column:2; display:flex; flex-direction:column; gap:.9em; }
+  .colophon p{ white-space:nowrap; }
+  .colophon em{ display:block; margin:0; }          /* label above the name on narrow screens */
+  .colophon .written{ font-size:calc(var(--t-body) - 3pt); }   /* same size as Designed by / Typeface */
+}
+</style>
+
+<div class="intro" id="intro" aria-hidden="true"><div class="intro-word" id="introWord">Speak White</div></div>
+
+<header class="top">
+  <div class="progress" id="progress"></div>
+<h1 class="title"><button class="home" id="home" type="button" title="Back to the start">Speak White</button></h1></header>
+
+<div class="langs" role="group" aria-label="Language">
+  <button class="lang fr" id="btnFr" type="button" aria-pressed="true" lang="fr">fra</button><span class="slash" aria-hidden="true">/</span><button class="lang en" id="btnEn" type="button" aria-pressed="false" lang="en">eng</button>
+</div>
+
+<div class="runway" id="runway">
+  <div class="sheet" id="sheet">
+    <main>
+      <article class="poem" id="poem" aria-label="Speak White, Michèle Lalonde"></article>
+    </main>
+  </div>
+  <div class="runway-end" id="runwayEnd"></div>
+</div>
+
+<!-- end panels: slide in from the sides once the poem has fully converged -->
+<aside class="panel panel-left" id="panelLeft" aria-label="Colophon">
+  <div class="colophon">
+    <p class="written"><em>Written by</em>Michèle Lalonde<span class="sep">|</span>1970</p>
+    <div class="credits-end">
+      <p><em>Designed by</em>Cindy Zhao<span class="sep">|</span>2026</p>
+      <p><em>Typeface</em>Adobe Caslon Pro</p>
+    </div>
+  </div>
+</aside>
+<aside class="panel panel-right" id="panelRight" aria-label="About the poem">
+  <div class="panel-scroll" id="panelScroll">
+  <div class="about">
+    <!-- VIDEO: your YouTube embed (youtube.com/watch?v=0hsifsVi2po). To swap it, change the id after /embed/
+         here and in the "Watch on YouTube" link below.
+         YouTube players only load when the page is served from a website (http/https). When the file
+         is opened straight from your computer, the player is swapped for a "Watch on YouTube" box. -->
+    <figure class="video-slot">
+      <iframe id="video" src="https://www.youtube.com/embed/0hsifsVi2po"
+        title="Michèle Lalonde reads Speak White, 1970"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      <figcaption>Michèle Lalonde reads “Speak White” at La Nuit de la poésie, Montréal, 27 March 1970
+        <a class="yt-link" href="https://www.youtube.com/watch?v=0hsifsVi2po" target="_blank" rel="noopener">Watch on YouTube&nbsp;↗</a></figcaption>
+    </figure>
+    <script>
+      /* opened straight from disk: YouTube refuses to play there, so show a link box instead */
+      (function(){
+        if (location.protocol !== 'file:') return;
+        var f = document.getElementById('video');
+        var a = document.createElement('a');
+        a.id = 'video'; a.className = 'video-fallback';
+        a.href = 'https://www.youtube.com/watch?v=0hsifsVi2po'; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'Watch on YouTube ↗';
+        f.parentNode.replaceChild(a, f);
+      })();
+    </script>
+    <!-- ABOUT THE POEM -->
+    <section class="history">
+      <h2>About the Poem</h2>
+      <p>Michèle Lalonde (1937–2021) composed “Speak White” in October 1968, reclaiming an infamous racist insult used to enforce English dominance over French-speaking Canadians. Spoken in a collective voice, the poem reappropriates the slur to expose the linguistic, economic, and cultural subjugation of Francophone Quebec. By drawing explicit parallels to global anti-imperialist and civil rights movements—from Vietnam and the Congo to Watts and Little Rock—Lalonde framed Quebec’s struggle within a broader history of resistance. Her iconic reading at Montréal’s Nuit de la poésie on March 27, 1970, catapulted the work into the cultural canon, and its 1974 publication as a poster-poem cemented its place as a landmark artifact of Quebec’s linguistic politics.</p>
+    </section>
+    <!-- VISUALIZING THE VOICES: the design statement -->
+    <section class="history statement">
+      <h2>Visualizing the Voices</h2>
+      <p>While Michèle Lalonde’s original text is laid out in a single continuous column, I saw it operating across multiple distinct registers simultaneously. To translate this polyphonic quality into my double-sided poster (presented in French and English), I decomposed the poem into three structural columns:</p>
+      <ul class="columns-list">
+        <li><em>The Left Column</em> holds the marginalized perspective—the voice that confronts and names the unvarnished truths of systemic oppression.</li>
+        <li><em>The Middle Column</em> carries the voice of institutional authority, delivering state propaganda and the underlying mandate to “speak white.”</li>
+        <li><em>The Right Column</em> captures the dominant culture’s performative benevolence, which I placed directly adjacent to the left column so each voice forces a reexamination of the other.</li>
+      </ul>
+      <p>In this web experience, I designed these three voices to initially rise as isolated streams, allowing their distinct tensions to build before they finally converge into the unified, single-column architecture of Lalonde’s original text.</p>
+    </section>
+  </div>
+  </div>
+</aside>
+
+<div class="wave" id="wave"></div>
+<div class="cursor" id="cursor"></div>
+
+<!--
+  ============================  POEM TEXT  ============================
+  Paste the poem into the two blocks below, one line per line.
+    @L / @M / @R   start a block in the left / middle / right column
+                   (left: immigrant voice · middle: mainstream voice · right: performed kindness)
+    sw             optional marker for blocks containing "speak white" (hovering any "speak white" inverts the page)
+    *words*        italic
+    ~              placeholder line: replace each ~ with a line of the poem
+  Keep the same number of @ blocks in both languages so switching language never loses your place.
+  The skeleton below follows the column layout of the printed poster.
+  =====================================================================
+-->
+<script type="text/plain" id="poem-fr">
+@M
+*Speak white*
+
+@R
+il est si beau de vous entendre
+parler de Paradise Lost
+ou du profil gracieux et anonyme qui tremble
+dans les sonnets de Shakespeare
+
+@L
+nous sommes un peuple inculte et bègue
+mais ne sommes pas sourds au génie d'une langue
+parlez avec l'accent de Milton et Byron et Shelley et Keats
+
+@M sw
+*Speak white*
+
+@L
+et pardonnez-nous de n'avoir pour réponse
+que les chants rauques de nos ancêtres
+et le chagrin de Nelligan
+
+@M sw
+*Speak white*
+
+@R
+parlez de choses et d'autres
+parlez-nous de la Grande Charte
+ou du monument à Lincoln
+du charme gris de la Tamise
+de l'eau rose du Potomac
+
+@L
+parlez-nous de vos traditions
+nous sommes un peuple peu brillant
+mais fort capable d'apprécier
+toute l'importance des crumpets
+ou du Boston Tea Party
+
+@M sw
+mais quand vous *really speak white*
+quand vous *get down to brass tacks*
+
+@R
+pour parler du *gracious living*
+et parler du standard de vie
+et de la Grande Société
+
+@M sw
+un peu plus fort alors *speak white*
+
+@L
+haussez vos voix de contremaîtres
+nous sommes un peu durs d'oreille
+nous vivons trop près des machines
+et n'entendons que notre souffle au-dessus des outils
+
+@M sw
+*speak white and loud*
+
+@R
+qu'on vous entende
+de Saint-Henri à Saint-Domingue
+oui quelle admirable langue
+pour embaucher
+donner des ordres
+
+@L
+fixer l'heure de la mort à l'ouvrage
+et de la pause qui rafraîchit
+et ravigote le dollar
+
+@M sw
+*Speak white*
+
+@L
+*tell us that God is a great big shot*
+*and that we're paid to trust him*
+
+@M sw
+*Speak white*
+
+@L
+parlez-nous *production, profits* et pourcentages
+
+@M sw
+*Speak white*
+
+@R
+c'est une langue riche
+pour acheter
+
+@L
+mais pour se vendre
+mais pour se vendre à perte d’âme
+mais pour se vendre
+
+@M sw
+ah! 
+*Speak white*
+*big deal*
+
+@L
+mais pour vous dire
+l'éternité d'un jour de grève
+pour raconter
+une vie de peuple-concierge
+mais pour rentrer chez nous le soir
+à l'heure où le soleil s'en vient crever au-dessus des ruelles
+mais pour vous dire oui que le soleil se couche oui
+chaque jour de nos vies à l'est de vos empires
+rien ne vaut une langue à jurons
+notre parlure pas très propre
+tachée de cambouis et d'huile
+
+@M sw
+*Speak white*
+
+@L
+soyez à l'aise dans vos mots
+nous sommes un peuple rancunier
+mais ne reprochons à personne
+d'avoir le monopole
+de la correction de langage
+
+@R
+dans la langue douce de Shakespeare
+avec l'accent de Longfellow
+parlez un français pur et atrocement blanc
+
+@L
+comme au Viêt-Nam au Congo
+parlez un allemand impeccable
+une étoile jaune entre les dents
+parlez russe, parlez rappel à l'ordre, parlez répression
+
+@M sw
+*Speak white*
+
+@R
+c'est une langue universelle
+nous sommes nés pour la comprendre
+
+@L
+avec ses mots lacrymogènes
+avec ses mots matraques
+
+@M sw
+*Speak white*
+
+@L
+*tell us again about Freedom and Democracy*
+nous savons que liberté est un mot noir
+comme la misère est nègre
+et comme le sang se mêle à la poussière des rues d'Alger
+ou de Little Rock
+
+@M sw
+*Speak white*
+
+@L sw
+de Westminster à Washington, relayez-vous
+*speak white* comme à Wall Street
+white comme à Watts
+
+@M
+be civilized
+
+@L
+et comprenez notre parler de circonstance
+quand vous nous demandez poliment
+
+@R
+*how do you do?*
+
+@L
+et nous entendez vous répondre
+
+@R
+*we're doing all right*
+*we're doing fine*
+*we*
+*are not alone*
+
+@L
+We know
+That we are not alone
+</script>
+
+<script type="text/plain" id="poem-en">
+@M
+*Speak white*
+
+@R
+It sounds so good when you
+Speak of Paradise Lost
+And of the gracious and anonymous profile that trembles
+In Shakespeare's sonnets
+
+@L
+We're an uncultured stammering race
+But we are not deaf to the genius of a language
+Speak with the accent of Milton and Byron and Shelley and Keats
+
+@M sw
+*Speak white*
+
+@L
+And forgive us our only answer
+Being the raucous songs of our ancestors
+And the sorrows of Nelligan
+
+@M sw
+*Speak white*
+
+@R
+Talk about this and that
+Tell us about Magna Carta
+Or the Lincoln Memorial
+The grey charm of the Thames
+The pink waters of the Potomac
+
+@L
+Tell us about your traditions
+As a people we don't really shine
+But we're quite capable of appreciating
+All the significance of crumpets
+Or the Boston Tea Party
+
+@M sw
+But when you *really speak white*
+When you *get down to brass tacks*
+
+@R
+To talk about *gracious living*
+And speak of standing in life
+And the Great Society
+
+@M sw
+A bit stronger then, *speak white*
+
+@L
+Raise your foremen's voices
+We're a bit hard of hearing
+We live too close to the machines
+And we only hear the sound of our breathing over the tools.
+
+@M sw
+*Speak white and loud*
+
+@R
+So that we can hear you
+From St-Henri to St-Domingue
+What an admirable tongue
+For hiring
+Giving orders
+
+@L
+Setting the time for working yourself to death
+And for the pause that refreshes
+And invigorates the dollar
+
+@M sw
+*Speak white*
+
+@L
+*Tell us that God is a great big shot*
+*And that we're paid to trust him*
+
+@M sw
+*Speak white*
+
+@L
+Talk to us about *production, profits* and percentages
+
+@M sw
+*Speak white*
+
+@R
+It's a rich langauge
+For buying
+
+@L
+But for selling
+But for selling your soul
+But for selling out
+
+@M sw
+Ah!
+*Speak white*
+*Big deal*
+
+@L
+But to tell you about
+The eternity of a day on strike
+To tell the story of
+How a race of servants live
+But for us to come home at night
+At the time that the sun snuffs itself out over the backstreets
+But to tell you yes that the sun is setting yes
+Every day of our lives to the east of your empires
+There's nothing to match a language of swearwords
+Our none-too-clean parlure
+Greasy and oil-stained.
+
+@M sw
+*Speak white*
+
+@L
+Be easy in your words
+We're a race that holds grudges
+But let's not criticize anyone
+For having a monopoly
+On correcting language
+
+@R
+In Shakespeare's soft tongue
+With the accent of Longfellow
+Speak a pure and atrociously white French
+
+@L
+Like in Vietnam, like in the Congo
+Speak impeccable German
+A yellow star between your teeth
+Speak Russian speak call to order speak repression
+
+@M sw
+*Speak white*
+
+@R
+It is a universal language
+We were born to understand it
+
+@L
+With its teargas words
+With its nightstick words
+
+@M sw
+*Speak white*
+
+@L
+*Tell us again about Freedom and Democracy*
+We know that liberty is a black word
+Just as poverty is black
+And just as blood mixes with dust in the streets of Algiers
+And Little Rock
+
+@M sw
+*Speak white*
+
+@L sw
+From Westminster to Washington take it in turn
+*Speak white* like they do on Wall Street
+White like they do in Watts
+
+@M
+*Be civilized*
+
+@L
+And understand us when we speak of circumstances
+When you ask us politely
+
+@R
+*How do you do*
+
+@L
+And we hear you say
+
+@R
+*We're doing all right*
+*We're doing fine*
+*We*
+*Are not alone*
+
+@L
+We know
+That we are not alone
+</script>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var poemEl = document.getElementById('poem');
+  var progress = document.getElementById('progress');
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- language ---------- */
+  var lang = 'fr';
+  try { var saved = localStorage.getItem('sw-lang'); if (saved === 'en' || saved === 'fr') lang = saved; } catch(e){}
+  var btnFr = document.getElementById('btnFr'), btnEn = document.getElementById('btnEn');
+  function setLang(l){
+    lang = l;
+    root.setAttribute('data-lang', l);
+    btnFr.setAttribute('aria-pressed', l === 'fr');
+    btnEn.setAttribute('aria-pressed', l === 'en');
+    try { localStorage.setItem('sw-lang', l); } catch(e){}
+  }
+  btnFr.addEventListener('click', function(){ setLang('fr'); });
+  btnEn.addEventListener('click', function(){ setLang('en'); });
+  setLang(lang);
+
+  /* ---------- parse ---------- */
+  function parse(src){
+    var blocks = [], cur = null;
+    src.split(/\r?\n/).forEach(function(raw){
+      var t = raw.trim();
+      if (!t || t.charAt(0) === '#') return;
+      var m = t.match(/^@(L|M|R)\b(.*)$/i);
+      if (m){ cur = { col:m[1].toUpperCase(), sw:/\bsw\b/i.test(m[2]), lines:[] }; blocks.push(cur); return; }
+      if (cur) cur.lines.push(t);
+    });
+    return blocks;
+  }
+  function esc(s){ return s.replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  var phCount = 0;
+  function fmt(s){
+    if (s === '~'){ phCount++; var w = 6 + ((phCount * 37) % 12); return '<span class="ph" style="width:' + w + 'em"></span>'; }
+    return esc(s).replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                 .replace(/speak\s+white/gi, '<span class="sw-word">$&</span>');
+  }
+  function layerHTML(b, l){
+    if (!b) return '';
+    return '<div class="layer" data-l="' + l + '" lang="' + l + '">' +
+      b.lines.map(function(x){ return '<span class="line">' + fmt(x) + '</span>'; }).join('') + '</div>';
+  }
+
+  var fr = parse(document.getElementById('poem-fr').textContent);
+  var en = parse(document.getElementById('poem-en').textContent);
+  var n = Math.max(fr.length, en.length);
+  var blocks = [];
+  for (var i = 0; i < n; i++){
+    var a = fr[i], b = en[i], meta = b || a;
+    var el = document.createElement('div');
+    el.className = 'block';
+    el.setAttribute('data-col', meta.col);
+    el.style.gridRow = String(i + 1);
+    el.innerHTML = layerHTML(a, 'fr') + layerHTML(b, 'en');
+    poemEl.appendChild(el);
+    blocks.push({ el:el, sw:!!((a && a.sw) || (b && b.sw)) });
+  }
+
+  /* ---------- scroll: converge each stanza into the centre column, tied to scroll position ----------
+     Stanzas rise in their three poster columns. A stanza starts moving toward the centre when
+     its top crosses START (three quarters down the screen, the top of its bottom quarter) and
+     arrives at END (45% down), the same 30%-of-screen travel as before. In between it
+     sits part-way, so it stops wherever the reader stops scrolling.
+     LINE_DROP nudges both lines by a fixed number of pixels (38px is about 1 cm on screen).
+
+     Ending, in screen heights of extra scrolling once the poem's end reaches the bottom:
+       SORT_LEN   the poem holds still while the last stanzas finish converging
+       PANEL_LEN  the two end panels slide in from the sides
+       HOLD_LEN   a little room to rest on the panels before the page ends */
+  /* scroll settings: DESKTOP is used on desktops and laptops, PHONE on screens 760px wide
+     or narrower (same breakpoint as the PHONE section in the styles). Change one without
+     touching the other. */
+  var DESKTOP = { START:0.75, END:0.45, LINE_DROP:0, SORT_LEN:0.8, PANEL_LEN:1.0, HOLD_LEN:0.3 };
+  var PHONE   = { START:0.75, END:0.45, LINE_DROP:0, SORT_LEN:0.8, PANEL_LEN:1.0, HOLD_LEN:0.3 };
+  var phoneQuery = window.matchMedia('(max-width:760px)');
+  var START, END, LINE_DROP, SORT_LEN, PANEL_LEN, HOLD_LEN;
+  function applySettings(){
+    var c = phoneQuery.matches ? PHONE : DESKTOP;
+    START = c.START; END = c.END; LINE_DROP = c.LINE_DROP;
+    SORT_LEN = c.SORT_LEN; PANEL_LEN = c.PANEL_LEN; HOLD_LEN = c.HOLD_LEN;
+  }
+  applySettings();
+  var panelLeft = document.getElementById('panelLeft');
+  var panelRight = document.getElementById('panelRight');
+  var panelScroll = document.getElementById('panelScroll');
+  var runway = document.getElementById('runway');
+  var sheet = document.getElementById('sheet');
+  var pinAt = Infinity;
+  var lastWord = null, busy = false;                      /* hover-inversion state (used below) */
+
+  /* ---------- measure: column offsets and the room under the poem ---------- */
+  /* phones: lines start aligned to their column's side (left or right) and slide to centred as
+     their stanza converges. It works row by row, so a line that wraps onto two rows still ends
+     centred: each word is wrapped in a small span, the words are grouped into the rows the
+     browser laid out, and each row slides by its own distance. Desktop lines are left as they are. */
+  function tokenize(line){
+    if (line._orig !== undefined) return;
+    line._orig = line.innerHTML;
+    var walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT, null), texts = [];
+    while (walker.nextNode()) texts.push(walker.currentNode);
+    texts.forEach(function(t){
+      if (t.parentNode.closest('.sw-word')) return;             /* keep "speak white" as one unit */
+      var frag = document.createDocumentFragment();
+      t.nodeValue.split(/(\s+)/).forEach(function(part){
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+        var w = document.createElement('span'); w.className = 'w'; w.textContent = part; frag.appendChild(w);
+      });
+      t.parentNode.replaceChild(frag, t);
+    });
+    Array.prototype.forEach.call(line.querySelectorAll('.sw-word'), function(sw){ sw.classList.add('w'); });
+  }
+  function untokenize(line){
+    if (line._orig === undefined) return;
+    line.innerHTML = line._orig; delete line._orig;
+  }
+  function measureLines(){
+    var phone = phoneQuery.matches;
+    blocks.forEach(function(b){
+      var col = b.el.getAttribute('data-col');
+      b.rows = []; b.lastK = -1;
+      Array.prototype.forEach.call(b.el.querySelectorAll('.line'), function(line){
+        if (!phone || col === 'M') { untokenize(line); return; }
+        tokenize(line);
+        var words = line.querySelectorAll('.w');
+        Array.prototype.forEach.call(words, function(w){ w.style.transform = ''; });
+        var width = line.getBoundingClientRect().width, rows = {};
+        Array.prototype.forEach.call(words, function(w){
+          var r = w.getBoundingClientRect(), key = Math.round(r.top / 4);
+          var row = rows[key] || (rows[key] = { left:Infinity, right:-Infinity, words:[] });
+          row.left = Math.min(row.left, r.left); row.right = Math.max(row.right, r.right); row.words.push(w);
+        });
+        Object.keys(rows).forEach(function(key){
+          var row = rows[key], gap = Math.max(0, width - (row.right - row.left));
+          b.rows.push({ words:row.words, dx:(col === 'L' ? 1 : -1) * gap / 2 });
+        });
+      });
+    });
+  }
+  function measure(){
+    applySettings();                                      /* desktop or phone settings */
+    var cw = poemEl.clientWidth;
+    blocks.forEach(function(b){
+      var c = b.el.offsetLeft + b.el.offsetWidth / 2;
+      b.el.style.setProperty('--shift', (cw / 2 - c) + 'px');   /* distance to the centre column */
+    });
+    var vh = window.innerHeight;
+    measureLines();
+    var sheetH = sheet.offsetHeight;
+    sheet.style.top = (vh - sheetH) + 'px';              /* sticks once its bottom meets the screen bottom */
+    document.getElementById('runwayEnd').style.height = ((SORT_LEN + PANEL_LEN + HOLD_LEN) * vh) + 'px';
+    var runwayTop = runway.getBoundingClientRect().top + window.scrollY;
+    var padTop = parseFloat(getComputedStyle(runway).paddingTop) || 0;
+    pinAt = runwayTop + padTop + sheetH - vh;            /* scroll position where the poem holds still */
+  }
+
+  function smooth(t){ return t * t * (3 - 2 * t); }
+  function clamp01(x){ return Math.min(1, Math.max(0, x)); }
+  var started = false, ticking = false;
+  function settleColors(){                                /* drop transitions for one frame */
+    root.classList.add('swap');
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ root.classList.remove('swap'); }); });
+  }
+  function update(){
+    ticking = false;
+    var vh = window.innerHeight, from = vh * START + LINE_DROP, to = vh * END + LINE_DROP;
+    var tSort = clamp01((window.scrollY - pinAt) / (SORT_LEN * vh));  /* 0 → 1 over the end scroll */
+    blocks.forEach(function(b){
+      var top = b.el.getBoundingClientRect().top;
+      var p = started ? clamp01((from - top) / (from - to)) : 0;
+      if (started) p = p + (1 - p) * tSort;                /* finish any stanza still on its way */
+      var k = smooth(p);
+      b.el.style.transform = 'translateX(calc(var(--shift, 0px) * ' + k.toFixed(4) + '))';
+      if (b.rows && b.rows.length && Math.abs(k - b.lastK) > 0.0005){
+        b.lastK = k;
+        b.rows.forEach(function(r){
+          var t = 'translateX(' + (r.dx * k).toFixed(2) + 'px)';
+          r.words.forEach(function(w){ w.style.transform = t; });
+        });
+      }
+    });
+    /* end panels: slide in from the left and right edges */
+    var tPanel = smooth(clamp01((window.scrollY - pinAt - SORT_LEN * vh) / (PANEL_LEN * vh)));
+    var off = (1 - tPanel) * 101;
+    panelLeft.style.transform = 'translateX(' + (-off) + '%)';
+    panelRight.style.transform = 'translateX(' + off + '%)';
+    panelLeft.style.visibility = panelRight.style.visibility = tPanel > 0 ? 'visible' : 'hidden';
+    /* the right panel only scrolls on its own once it has fully arrived, so it can't
+       catch the page scroll while it is still sliding in */
+    panelScroll.style.overflowY = tPanel >= 1 ? 'auto' : 'hidden';
+    var max = document.documentElement.scrollHeight - vh;
+    progress.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0) + ')';
+  }
+  function req(){ if (!ticking){ ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', req, { passive:true });
+  /* line "Written by" up with the top edge of the video as first laid out. Measured with the
+     right panel's own scroll taken out, so the left panel never moves when the right one scrolls. */
+  var colophonEl = document.querySelector('.colophon');
+  var videoEl = document.getElementById('video');
+  function alignColophon(){
+    var pr = panelLeft.getBoundingClientRect();
+    var edge = panelLeft.clientTop;                       /* the panel's own 1pt border */
+    var top = videoEl.getBoundingClientRect().top + panelScroll.scrollTop - pr.top - edge;
+    colophonEl.style.setProperty('--col-top', top + 'px');
+  }
+  window.addEventListener('resize', function(){ measure(); alignColophon(); req(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ measure(); alignColophon(); req(); });
+  measure(); alignColophon(); update();
+
+  function start(){
+    started = true;
+    update();
+  }
+
+  /* ---------- opening: white on white, selected, blacked out ----------
+     playIntro() runs on load and again whenever the title is clicked. */
+  var intro = document.getElementById('intro');
+  var word = document.getElementById('introWord');
+  var text = word.textContent;
+  word.textContent = '';
+  var chars = text.split('').map(function(ch){
+    var s = document.createElement('span'); s.className = 'c'; s.textContent = ch; word.appendChild(s); return s;
+  });
+  var timers = [], done = true;
+  function later(fn, ms){ timers.push(setTimeout(fn, ms)); }
+  function reveal(){
+    poemEl.classList.add('shown');
+    later(start, reduce ? 0 : 900);
+  }
+  function hideIntro(){ intro.hidden = true; }
+  function finish(){                                      /* skip straight to the poem */
+    if (done) return; done = true;
+    timers.forEach(clearTimeout); timers = [];
+    intro.classList.add('dark', 'gone');
+    later(hideIntro, 950);
+    reveal();
+  }
+  function playIntro(){
+    timers.forEach(clearTimeout); timers = [];
+    if (reduce){ hideIntro(); done = true; reveal(); return; }
+    done = false;
+    chars.forEach(function(s){ s.classList.remove('sel'); });
+    intro.classList.remove('dark', 'gone');
+    intro.hidden = false;
+    var t0 = 900;
+    chars.forEach(function(s, i){ later(function(){ s.classList.add('sel'); }, t0 + i * 65); });
+    var tSel = t0 + chars.length * 65;
+    later(function(){ intro.classList.add('dark'); }, tSel + 900);
+    later(function(){ intro.classList.add('gone'); done = true; reveal(); }, tSel + 2000);
+    later(hideIntro, tSel + 3000);
+  }
+  ['click','wheel','touchstart'].forEach(function(ev){ intro.addEventListener(ev, finish, { passive:true }); });
+  window.addEventListener('keydown', function(){ if (!done) finish(); });
+  window.addEventListener('wheel', function(){ if (!done) finish(); }, { passive:true });
+  playIntro();
+
+  /* ---------- title: back to the start, replaying the opening ----------
+     The opening's white screen fades in over the page: everything else fades away, and a
+     black background turns white in place. Once it is fully white, the page resets behind
+     it and the opening plays from the start. */
+  var resetting = false, FADE_MS = 900;
+  document.getElementById('home').addEventListener('click', function(){
+    if (resetting) return;
+    resetting = true;
+    timers.forEach(clearTimeout); timers = [];
+    done = true;                                          /* nothing to skip during the fade */
+    chars.forEach(function(s){ s.classList.remove('sel'); });
+    intro.classList.remove('dark');
+    intro.classList.add('gone');                          /* start fully transparent */
+    intro.hidden = false;
+    void intro.offsetWidth;                               /* commit the start state */
+    intro.classList.remove('gone');                       /* fade the white screen in */
+    setTimeout(function(){
+      settleColors();
+      root.removeAttribute('data-inv');
+      lastWord = null;
+      started = false;
+      poemEl.classList.remove('shown');
+      measure();
+      window.scrollTo(0, 0);
+      update();
+      resetting = false;
+      playIntro();
+    }, FADE_MS + 50);
+  });
+
+  /* ---------- inverting cursor ---------- */
+  var cur = document.getElementById('cursor');
+  window.addEventListener('mousemove', function(e){
+    cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)';
+    cur.classList.add('on');
+    cur.classList.toggle('big', !!(e.target.closest && e.target.closest('button, a, .title, .sw-word')));
+  }, { passive:true });
+  document.addEventListener('mouseleave', function(){ cur.classList.remove('on'); });
+
+  /* ---------- hover a "speak white" to invert the page ---------- */
+  var wave = document.getElementById('wave');
+  function flip(){
+    root.classList.add('swap');
+    if (root.hasAttribute('data-inv')) root.removeAttribute('data-inv'); else root.setAttribute('data-inv', '');
+    wave.style.clipPath = 'circle(0px at 50% 50%)';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ root.classList.remove('swap'); busy = false; }); });
+  }
+  var px = innerWidth / 2, py = innerHeight / 2;
+  window.addEventListener('pointermove', function(e){ px = e.clientX; py = e.clientY; }, { passive:true });
+  function ease(t){ return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  document.addEventListener('pointerover', function(e){
+    var w = e.target.closest && e.target.closest('.sw-word');
+    if (!w || busy) return;                               /* any entry counts, even the same word again */
+    lastWord = w; busy = true;
+    px = e.clientX; py = e.clientY;
+    if (reduce){ flip(); return; }
+    var t0 = performance.now(), DUR = 800;
+    (function frame(now){
+      var t = Math.min(1, (now - t0) / DUR);
+      var box = wave.getBoundingClientRect();
+      var x = px - box.left, y = py - box.top;   /* centre tracks the live cursor */
+      var R = Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y)) + 20;
+      var r = 17 + (R - 17) * ease(t);
+      wave.style.clipPath = 'circle(' + r + 'px at ' + x + 'px ' + y + 'px)';
+      if (t < 1) requestAnimationFrame(frame); else flip();
+    })(t0);
+  }, { passive:true });
+})();
+</script>
