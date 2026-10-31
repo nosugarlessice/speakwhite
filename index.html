@@ -165,20 +165,23 @@ main{ padding-block:0 10vh; }
 .langs .slash{ padding-inline:.35em; }
 .lang:focus-visible{ outline:1px solid currentColor; outline-offset:3px; }
 
-/* ---------- end panels: two outlined panels that slide in from the sides over the poem ----------
-   They sit under the top banner (z-index 20) and above everything else in the page. */
+/* ---------- ending: the screen fades to black, then the colophon and the "about" content fade in
+   from the black. The fade sits under the top banner (z-index 20), so the title and fra / eng stay. */
+.fade-black{
+  position:fixed; inset:0; z-index:17;
+  background:#000; opacity:0; visibility:hidden; pointer-events:none;
+}
 .panel{
   position:fixed; top:0; bottom:0; z-index:18;
-  background:var(--bg); color:var(--fg);
-  border:1pt solid var(--fg);
+  background:transparent; color:var(--fg);
   box-sizing:border-box;
   display:flex; align-items:center; justify-content:center;
   padding:calc(env(safe-area-inset-top, 0px) + 112px) 32px calc(env(safe-area-inset-bottom, 0px) + 48px);
-  transition:background-color .7s ease, color .7s ease, border-color .7s ease;
-  will-change:transform;
+  opacity:0; visibility:hidden;
+  transition:color .7s ease;
 }
-.panel-left{ left:0; width:calc(100% / 3); transform:translateX(-101%); }     /* colophon: one third */
-.panel-right{ right:0; width:calc(200% / 3); transform:translateX(101%); }    /* about: two thirds */
+.panel-left{ left:0; width:calc(100% / 3); }      /* colophon: one third */
+.panel-right{ right:0; width:calc(200% / 3); }    /* about: two thirds */
 
 /* right panel: the poet's reading, then a short history of the poem */
 .panel-right{ padding:0; overflow:hidden; }
@@ -226,7 +229,8 @@ main{ padding-block:0 10vh; }
 .colophon .written{ position:absolute; left:32px; right:32px; top:var(--col-top, 40%); }
 .colophon .credits-end{ position:absolute; left:32px; right:32px; bottom:calc(env(safe-area-inset-bottom, 0px) + 48px);
   font-size:calc(var(--t-body) - 3pt); }   /* "Designed by" and "Typeface": 3pt smaller */
-.colophon em{ font-style:italic; margin-right:.35em; }   /* only the labels are italic */
+.colophon em{ font-style:italic; margin-right:.1em; }
+.colophon .nb{ white-space:nowrap; }   /* names never split: lines break only after the label or before the bar */   /* only the labels are italic */
 .colophon .sep{ padding-inline:.4em; }                     /* bar before the year */
 
 /* ---------- cursor ---------- */
@@ -318,7 +322,6 @@ main{ padding-block:0 10vh; }
   .colophon .written, .colophon .credits-end{ position:static; }
   .colophon .written{ grid-column:1; text-align:left; }
   .colophon .credits-end{ grid-column:2; display:flex; flex-direction:column; gap:.9em; }
-  .colophon p{ white-space:nowrap; }
   .colophon em{ display:block; margin:0; }          /* label above the name on narrow screens */
   .colophon .written{ font-size:calc(var(--t-body) - 3pt); }   /* same size as Designed by / Typeface */
 }
@@ -343,13 +346,14 @@ main{ padding-block:0 10vh; }
   <div class="runway-end" id="runwayEnd"></div>
 </div>
 
-<!-- end panels: slide in from the sides once the poem has fully converged -->
+<!-- ending: black fade, then the colophon and the "about" content fade in from it -->
+<div class="fade-black" id="fadeBlack"></div>
 <aside class="panel panel-left" id="panelLeft" aria-label="Colophon">
   <div class="colophon">
-    <p class="written"><em>Written by</em>Michèle Lalonde<span class="sep">|</span>1970</p>
+    <p class="written"><em>Written by</em> <span class="nb">Michèle Lalonde</span> <span class="nb"><span class="sep">|</span>1970</span></p>
     <div class="credits-end">
-      <p><em>Designed by</em>Cindy Zhao<span class="sep">|</span>2026</p>
-      <p><em>Typeface</em>Adobe Caslon Pro</p>
+      <p><em>Designed by</em> <span class="nb">Cindy Zhao</span> <span class="nb"><span class="sep">|</span>2026</span></p>
+      <p><em>Typeface</em> <span class="nb">Adobe Caslon Pro</span></p>
     </div>
   </div>
 </aside>
@@ -365,7 +369,7 @@ main{ padding-block:0 10vh; }
         title="Michèle Lalonde reads Speak White, 1970"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-      <figcaption>Michèle Lalonde reads “Speak White” at La Nuit de la poésie, Montréal, 27 March 1970
+      <figcaption>Michèle&nbsp;Lalonde reads “Speak White” at La Nuit de la poésie, Montréal, 27 March 1970
         <a class="yt-link" href="https://www.youtube.com/watch?v=0hsifsVi2po" target="_blank" rel="noopener">Watch on YouTube&nbsp;↗</a></figcaption>
     </figure>
     <script>
@@ -383,12 +387,12 @@ main{ padding-block:0 10vh; }
     <!-- ABOUT THE POEM -->
     <section class="history">
       <h2>About the Poem</h2>
-      <p>Michèle Lalonde (1937–2021) composed “Speak White” in October 1968, reclaiming an infamous racist insult used to enforce English dominance over French-speaking Canadians. Spoken in a collective voice, the poem reappropriates the slur to expose the linguistic, economic, and cultural subjugation of Francophone Quebec. By drawing explicit parallels to global anti-imperialist and civil rights movements—from Vietnam and the Congo to Watts and Little Rock—Lalonde framed Quebec’s struggle within a broader history of resistance. Her iconic reading at Montréal’s Nuit de la poésie on March 27, 1970, catapulted the work into the cultural canon, and its 1974 publication as a poster-poem cemented its place as a landmark artifact of Quebec’s linguistic politics.</p>
+      <p>Michèle&nbsp;Lalonde (1937–2021) composed “Speak White” in October 1968, reclaiming an infamous racist insult used to enforce English dominance over French-speaking Canadians. Spoken in a collective voice, the poem reappropriates the slur to expose the linguistic, economic, and cultural subjugation of Francophone Quebec. By drawing explicit parallels to global anti-imperialist and civil rights movements—from Vietnam and the Congo to Watts and Little Rock—Lalonde framed Quebec’s struggle within a broader history of resistance. Her iconic reading at Montréal’s Nuit de la poésie on March 27, 1970, catapulted the work into the cultural canon, and its 1974 publication as a poster-poem cemented its place as a landmark artifact of Quebec’s linguistic politics.</p>
     </section>
     <!-- VISUALIZING THE VOICES: the design statement -->
     <section class="history statement">
       <h2>Visualizing the Voices</h2>
-      <p>While Michèle Lalonde’s original text is laid out in a single continuous column, I saw it operating across multiple distinct registers simultaneously. To translate this polyphonic quality into my double-sided poster (presented in French and English), I decomposed the poem into three structural columns:</p>
+      <p>While Michèle&nbsp;Lalonde’s original text is laid out in a single continuous column, I saw it operating across multiple distinct registers simultaneously. To translate this polyphonic quality into my double-sided poster (presented in French and English), I decomposed the poem into three structural columns:</p>
       <ul class="columns-list">
         <li><em>The Left Column</em> holds the marginalized perspective—the voice that confronts and names the unvarnished truths of systemic oppression.</li>
         <li><em>The Middle Column</em> carries the voice of institutional authority, delivering state propaganda and the underlying mandate to “speak white.”</li>
@@ -866,22 +870,28 @@ That we are not alone
 
      Ending, in screen heights of extra scrolling once the poem's end reaches the bottom:
        SORT_LEN   the poem holds still while the last stanzas finish converging
-       PANEL_LEN  the two end panels slide in from the sides
-       HOLD_LEN   a little room to rest on the panels before the page ends */
+       FADE_WAIT   a pause after the poem has finished converging, before any fading starts
+       FADE_LEN    the whole screen fades to black (the top banner stays)
+       REVEAL_WAIT a pause on the fully black screen
+       REVEAL_LEN  the colophon, video and texts fade in together from the black
+       HOLD_LEN   a little room to rest before the page ends */
   /* scroll settings: DESKTOP is used on desktops and laptops, PHONE on screens 760px wide
      or narrower (same breakpoint as the PHONE section in the styles). Change one without
      touching the other. */
-  var DESKTOP = { START:0.75, END:0.45, LINE_DROP:0, SORT_LEN:0.8, PANEL_LEN:1.0, HOLD_LEN:0.3 };
-  var PHONE   = { START:0.75, END:0.45, LINE_DROP:0, SORT_LEN:0.8, PANEL_LEN:1.0, HOLD_LEN:0.3 };
+  var DESKTOP = { START:0.75, END:0.45, LINE_DROP:0, SORT_LEN:0.8, FADE_WAIT:0.8, FADE_LEN:1.6, REVEAL_WAIT:0.5, REVEAL_LEN:1.4, HOLD_LEN:0.3 };
+  var PHONE   = { START:0.75, END:0.45, LINE_DROP:0, SORT_LEN:0.8, FADE_WAIT:0.8, FADE_LEN:1.6, REVEAL_WAIT:0.5, REVEAL_LEN:1.4, HOLD_LEN:0.3 };
   var phoneQuery = window.matchMedia('(max-width:760px)');
-  var START, END, LINE_DROP, SORT_LEN, PANEL_LEN, HOLD_LEN;
+  var START, END, LINE_DROP, SORT_LEN, FADE_WAIT, FADE_LEN, REVEAL_WAIT, REVEAL_LEN, HOLD_LEN;
   function applySettings(){
     var c = phoneQuery.matches ? PHONE : DESKTOP;
     START = c.START; END = c.END; LINE_DROP = c.LINE_DROP;
-    SORT_LEN = c.SORT_LEN; PANEL_LEN = c.PANEL_LEN; HOLD_LEN = c.HOLD_LEN;
+    SORT_LEN = c.SORT_LEN; FADE_WAIT = c.FADE_WAIT; FADE_LEN = c.FADE_LEN;
+    REVEAL_WAIT = c.REVEAL_WAIT; REVEAL_LEN = c.REVEAL_LEN; HOLD_LEN = c.HOLD_LEN;
   }
   applySettings();
   var panelLeft = document.getElementById('panelLeft');
+  var fadeBlack = document.getElementById('fadeBlack');
+  var invBeforeEnd = false;                               /* the page was inverted when the ending began */
   var panelRight = document.getElementById('panelRight');
   var panelScroll = document.getElementById('panelScroll');
   var runway = document.getElementById('runway');
@@ -949,7 +959,7 @@ That we are not alone
     measureLines();
     var sheetH = sheet.offsetHeight;
     sheet.style.top = (vh - sheetH) + 'px';              /* sticks once its bottom meets the screen bottom */
-    document.getElementById('runwayEnd').style.height = ((SORT_LEN + PANEL_LEN + HOLD_LEN) * vh) + 'px';
+    document.getElementById('runwayEnd').style.height = ((SORT_LEN + FADE_WAIT + FADE_LEN + REVEAL_WAIT + REVEAL_LEN + HOLD_LEN) * vh) + 'px';
     var runwayTop = runway.getBoundingClientRect().top + window.scrollY;
     var padTop = parseFloat(getComputedStyle(runway).paddingTop) || 0;
     pinAt = runwayTop + padTop + sheetH - vh;            /* scroll position where the poem holds still */
@@ -980,15 +990,22 @@ That we are not alone
         });
       }
     });
-    /* end panels: slide in from the left and right edges */
-    var tPanel = smooth(clamp01((window.scrollY - pinAt - SORT_LEN * vh) / (PANEL_LEN * vh)));
-    var off = (1 - tPanel) * 101;
-    panelLeft.style.transform = 'translateX(' + (-off) + '%)';
-    panelRight.style.transform = 'translateX(' + off + '%)';
-    panelLeft.style.visibility = panelRight.style.visibility = tPanel > 0 ? 'visible' : 'hidden';
-    /* the right panel only scrolls on its own once it has fully arrived, so it can't
-       catch the page scroll while it is still sliding in */
-    panelScroll.style.overflowY = tPanel >= 1 ? 'auto' : 'hidden';
+    /* ending: fade the screen to black, then fade the colophon and the "about" content in */
+    var past = window.scrollY - pinAt;
+    var fadeAt = (SORT_LEN + FADE_WAIT) * vh, revealAt = fadeAt + (FADE_LEN + REVEAL_WAIT) * vh;
+    var tFade = smooth(clamp01((past - fadeAt) / (FADE_LEN * vh)));
+    var tReveal = smooth(clamp01((past - revealAt) / (REVEAL_LEN * vh)));
+    fadeBlack.style.opacity = tFade;
+    fadeBlack.style.visibility = tFade > 0 ? 'visible' : 'hidden';
+    fadeBlack.style.pointerEvents = tFade > 0 ? 'auto' : 'none';   /* no hover-inversions under the black */
+    /* the ending is always white on black: if the page was inverted, switch back once it is mostly dark */
+    if (tFade >= 0.5 && root.hasAttribute('data-inv')) { invBeforeEnd = true; settleColors(); root.removeAttribute('data-inv'); }
+    else if (tFade < 0.5 && invBeforeEnd) { invBeforeEnd = false; settleColors(); root.setAttribute('data-inv', ''); }
+    var tCol = tReveal, tAbout = tReveal;                           /* everything fades in together */
+    panelLeft.style.opacity = tCol;   panelLeft.style.visibility = tCol > 0 ? 'visible' : 'hidden';
+    panelRight.style.opacity = tAbout; panelRight.style.visibility = tAbout > 0 ? 'visible' : 'hidden';
+    /* the right side only scrolls on its own once it has fully appeared */
+    panelScroll.style.overflowY = tAbout >= 1 ? 'auto' : 'hidden';
     var max = document.documentElement.scrollHeight - vh;
     progress.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0) + ')';
   }
@@ -1074,6 +1091,7 @@ That we are not alone
     setTimeout(function(){
       settleColors();
       root.removeAttribute('data-inv');
+      invBeforeEnd = false;
       lastWord = null;
       started = false;
       poemEl.classList.remove('shown');
