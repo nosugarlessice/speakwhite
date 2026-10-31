@@ -230,8 +230,9 @@ main{ padding-block:0 10vh; }
 .colophon .credits-end{ position:absolute; left:32px; right:32px; bottom:calc(env(safe-area-inset-bottom, 0px) + 48px);
   font-size:calc(var(--t-body) - 3pt); }   /* "Designed by" and "Typeface": 3pt smaller */
 .colophon em{ font-style:italic; margin-right:.1em; }
-.colophon .nb{ white-space:nowrap; }   /* names never split: lines break only after the label or before the bar */   /* only the labels are italic */
-.colophon .sep{ padding-inline:.4em; }                     /* bar before the year */
+.colophon .nb{ white-space:nowrap; }
+.colophon-inline{ display:none; }   /* phone only, see the PHONE section */   /* names never split: lines break only after the label or before the bar */   /* only the labels are italic */
+.colophon .sep{ padding-inline:.15em .4em; }   /* with the space before it, even gaps either side of the bar */                     /* bar before the year */
 
 /* ---------- cursor ---------- */
 .cursor{
@@ -309,10 +310,12 @@ main{ padding-block:0 10vh; }
   .panel{ padding-inline:16px; }
   /* phones: the panels still slide in from the sides, but stack — colophon a third of the
      height at the top, the reading and history in the lower two thirds */
-  .panel-left, .panel-right{ width:100%; }
-  .panel-left{ bottom:auto; height:calc(100% / 3); }
-  .panel-right{ top:auto; height:calc(200% / 3); }
-  .panel-scroll{ top:0; padding:28px 36px calc(env(safe-area-inset-bottom, 0px) + 32px); }   /* wider side margins */
+  /* phones: one full-screen piece — video, About the Poem, Visualizing the Voices, then the
+     colophon at the end. The separate colophon panel is not used on phones. */
+  .panel-left{ display:none; }
+  .panel-right{ width:100%; top:0; height:100%; }
+  .panel-scroll{ top:calc(env(safe-area-inset-top, 0px) + 92px); padding:28px 36px calc(env(safe-area-inset-bottom, 0px) + 48px); }   /* wider side margins */
+  .colophon-inline{ display:grid; height:auto; }
   .about{ width:100%; gap:64px; }
   .colophon{ line-height:1.5; }
   .panel-left{ padding-top:calc(env(safe-area-inset-top, 0px) + 92px); padding-bottom:16px; }
@@ -400,6 +403,15 @@ main{ padding-block:0 10vh; }
       </ul>
       <p>In this web experience, I designed these three voices to initially rise as isolated streams, allowing their distinct tensions to build before they finally converge into the unified, single-column architecture of Lalonde’s original text.</p>
     </section>
+    <!-- PHONE ONLY: the colophon continues straight after "Visualizing the Voices"
+         (on desktop it has its own column on the left, so this copy is hidden there) -->
+    <div class="colophon colophon-inline">
+      <p class="written"><em>Written by</em> <span class="nb">Michèle Lalonde</span> <span class="nb"><span class="sep">|</span>1970</span></p>
+      <div class="credits-end">
+        <p><em>Designed by</em> <span class="nb">Cindy Zhao</span> <span class="nb"><span class="sep">|</span>2026</span></p>
+        <p><em>Typeface</em> <span class="nb">Adobe Caslon Pro</span></p>
+      </div>
+    </div>
   </div>
   </div>
 </aside>
