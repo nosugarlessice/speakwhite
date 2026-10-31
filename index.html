@@ -316,6 +316,13 @@ main{ padding-block:0 10vh; }
   .panel-right{ width:100%; top:0; height:100%; }
   .panel-scroll{ top:calc(env(safe-area-inset-top, 0px) + 92px); padding:28px 36px calc(env(safe-area-inset-bottom, 0px) + 48px); }   /* wider side margins */
   .colophon-inline{ display:grid; height:auto; margin-top:128px; }   /* 64px section gap + 128px = 3× the space after Visualizing the Voices */
+  /* credits grid: "Written by" on its own first row; "Designed by" below it on the left,
+     with "Typeface" on that same row, set flush against the right edge */
+  .colophon.colophon-inline{ grid-template-columns:auto 1fr; row-gap:.9em; align-content:start; }
+  .colophon.colophon-inline .written{ grid-column:1; grid-row:1; }
+  .colophon.colophon-inline .credits-end{ display:contents; }
+  .colophon.colophon-inline .credits-end p:first-child{ grid-column:1; grid-row:2; }
+  .colophon.colophon-inline .credits-end p:last-child{ grid-column:2; grid-row:2; text-align:right; }
   .about{ width:100%; gap:64px; }
   .colophon{ line-height:1.5; }
   .panel-left{ padding-top:calc(env(safe-area-inset-top, 0px) + 92px); padding-bottom:16px; }
