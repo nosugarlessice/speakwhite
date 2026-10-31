@@ -116,7 +116,7 @@ main{ padding-block:0 10vh; }
   display:grid;
   grid-template-columns:repeat(3, minmax(0, 1fr));
   column-gap:24px;
-  row-gap:2.2em;
+  row-gap:2.75em;   /* space between stanzas (desktop) */
   line-height:1.4;
   opacity:0;
   transition:opacity 1.4s ease;
@@ -290,7 +290,7 @@ main{ padding-block:0 10vh; }
   }
 
   /* poem: one column; stanzas start shifted left / centre / right inside it */
-  .poem{ grid-template-columns:minmax(0, 1fr); padding-inline:0; row-gap:1.9em; }
+  .poem{ grid-template-columns:minmax(0, 1fr); padding-inline:0; row-gap:3.8em; }   /* space between stanzas (phone) */
   .block, .block[data-col]{ grid-column:1; width:82%; }
   .block[data-col="L"]{ justify-self:start; }
   .block[data-col="M"]{ justify-self:center; }
