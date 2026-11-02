@@ -215,12 +215,12 @@ main{ padding-block:0 10vh; }
 .history p{ margin:0 0 .9em; }
 .history p:last-child, .history ul:last-child{ margin-bottom:0; }
 .columns-list{ margin:0 0 .9em; padding:0; list-style:none; font-size:calc(var(--t-body) - 3pt); }   /* same size as the small credits */
-.columns-list li{ position:relative; padding-left:2.8em; margin-bottom:.6em; }
+.columns-list li{ position:relative; padding-left:3.1em; margin-bottom:.6em; }   /* room for the larger marks */
 /* bullets: small alignment marks — lines flush left, centred, flush right — one for each column.
    Drawn as masks filled with the text colour, so they invert with the page. */
 .columns-list li::before{
-  content:""; position:absolute; left:1.4em; top:.42em;
-  width:.85em; height:.85em; background:currentColor;
+  content:""; position:absolute; left:1.4em; top:.16em;   /* centred on the first line */
+  width:1.275em; height:1.275em; background:currentColor;   /* 1.5× the first size */
   -webkit-mask:var(--mark) no-repeat center / contain; mask:var(--mark) no-repeat center / contain;
 }
 .columns-list li:nth-child(1){ --mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cline x1='1' y1='3' x2='15' y2='3'/%3E%3Cline x1='1' y1='8' x2='10' y2='8'/%3E%3Cline x1='1' y1='13' x2='13' y2='13'/%3E%3C/svg%3E"); }   /* left column: lines flush left */
