@@ -216,7 +216,16 @@ main{ padding-block:0 10vh; }
 .history p:last-child, .history ul:last-child{ margin-bottom:0; }
 .columns-list{ margin:0 0 .9em; padding:0; list-style:none; font-size:calc(var(--t-body) - 3pt); }   /* same size as the small credits */
 .columns-list li{ position:relative; padding-left:2.8em; margin-bottom:.6em; }
-.columns-list li::before{ content:"–"; position:absolute; left:1.4em; }   /* en dash markers, indented */
+/* bullets: small alignment marks — lines flush left, centred, flush right — one for each column.
+   Drawn as masks filled with the text colour, so they invert with the page. */
+.columns-list li::before{
+  content:""; position:absolute; left:1.4em; top:.42em;
+  width:.85em; height:.85em; background:currentColor;
+  -webkit-mask:var(--mark) no-repeat center / contain; mask:var(--mark) no-repeat center / contain;
+}
+.columns-list li:nth-child(1){ --mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cline x1='1' y1='3' x2='15' y2='3'/%3E%3Cline x1='1' y1='8' x2='10' y2='8'/%3E%3Cline x1='1' y1='13' x2='13' y2='13'/%3E%3C/svg%3E"); }   /* left column: lines flush left */
+.columns-list li:nth-child(2){ --mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cline x1='1.0' y1='3' x2='15.0' y2='3'/%3E%3Cline x1='3.5' y1='8' x2='12.5' y2='8'/%3E%3Cline x1='2.0' y1='13' x2='14.0' y2='13'/%3E%3C/svg%3E"); }   /* middle column: lines centred */
+.columns-list li:nth-child(3){ --mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cline x1='1' y1='3' x2='15' y2='3'/%3E%3Cline x1='6' y1='8' x2='15' y2='8'/%3E%3Cline x1='3' y1='13' x2='15' y2='13'/%3E%3C/svg%3E"); }   /* right column: lines flush right */
 .history .ph{ display:block; margin:.55em 0 .75em; }       /* placeholder lines until the text is in */
 
 /* left panel: the colophon, fixed in place while the right panel scrolls —
