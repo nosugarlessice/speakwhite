@@ -108,7 +108,9 @@ body{
 .runway{ padding-top:var(--landing); }
 .sheet{ position:sticky; top:0; }
 .runway-end{ height:250vh; }
-main{ padding-block:0 10vh; }
+main{ padding-block:0 10vh; transition:opacity .4s ease; }
+/* language switch: the poem fades out, swaps language, then fades back in */
+main.lang-out{ opacity:0; }
 .poem{
   position:relative;
   max-width:1200px; margin-inline:auto;
@@ -845,8 +847,21 @@ That we are not alone
     btnEn.setAttribute('aria-pressed', l === 'en');
     try { localStorage.setItem('sw-lang', l); } catch(e){}
   }
-  btnFr.addEventListener('click', function(){ setLang('fr'); });
-  btnEn.addEventListener('click', function(){ setLang('en'); });
+  /* switching language: fade the poem out, swap it while it's hidden, fade it back in */
+  var mainEl = document.querySelector('main'), switching = false, LANG_FADE_MS = 400;
+  function switchLang(l){
+    if (l === lang || switching) return;
+    if (reduce) { setLang(l); return; }
+    switching = true;
+    mainEl.classList.add('lang-out');
+    setTimeout(function(){
+      setLang(l);
+      mainEl.classList.remove('lang-out');
+      setTimeout(function(){ switching = false; }, LANG_FADE_MS);
+    }, LANG_FADE_MS);
+  }
+  btnFr.addEventListener('click', function(){ switchLang('fr'); });
+  btnEn.addEventListener('click', function(){ switchLang('en'); });
   setLang(lang);
 
   /* ---------- parse ---------- */
