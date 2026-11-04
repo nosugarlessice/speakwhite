@@ -276,11 +276,18 @@ main.lang-out{ opacity:0; }
   transition:background-color 1s ease, opacity .9s ease;
 }
 .intro-word{
+  position:relative;
   font-family:var(--serif); font-style:italic; font-weight:400;
   font-size:var(--t-intro); color:#fff; white-space:pre;
+  font-kerning:none; font-variant-ligatures:none;   /* both layers set the letters identically */
   transition:opacity 1s ease;
 }
-.intro-word .c.sel{ background:var(--hilite); color:#fff; }
+/* two layers: the blue selection boxes underneath (letters invisible, only there for sizing),
+   and the whole word on top in white, so a wide italic letter like the W is never covered
+   by the next letter's box */
+.intro-hl .c{ color:transparent; }
+.intro-hl .c.sel{ background:var(--hilite); }
+.intro-txt{ position:absolute; left:0; top:0; color:#fff; pointer-events:none; }
 .intro.dark{ background:#000; }
 .intro.dark .intro-word{ opacity:0; }
 .intro.gone{ opacity:0; pointer-events:none; }
@@ -1079,8 +1086,12 @@ That we are not alone
   var word = document.getElementById('introWord');
   var text = word.textContent;
   word.textContent = '';
+  var hlLayer = document.createElement('span'); hlLayer.className = 'intro-hl';     /* selection boxes */
+  var txtLayer = document.createElement('span'); txtLayer.className = 'intro-txt';  /* the word, on top */
+  txtLayer.textContent = text;
+  word.appendChild(hlLayer); word.appendChild(txtLayer);
   var chars = text.split('').map(function(ch){
-    var s = document.createElement('span'); s.className = 'c'; s.textContent = ch; word.appendChild(s); return s;
+    var s = document.createElement('span'); s.className = 'c'; s.textContent = ch; hlLayer.appendChild(s); return s;
   });
   var timers = [], done = true;
   function later(fn, ms){ timers.push(setTimeout(fn, ms)); }
